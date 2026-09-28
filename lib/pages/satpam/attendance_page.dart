@@ -50,12 +50,32 @@ class _AttendancePageState
               ),
               items: const [
                 DropdownMenuItem(
-                  value: 'Gate Utama',
-                  child: Text('Gate Utama'),
+                  value: '1',
+                  child: Text('Pos Kantor Besar'),
                 ),
                 DropdownMenuItem(
-                  value: 'Gate Timur',
-                  child: Text('Gate Timur'),
+                  value: '2',
+                  child: Text('Pos Diponogero'),
+                ),
+                DropdownMenuItem(
+                  value: '3',
+                  child: Text('Pos Tengku Daud'),
+                ),
+                DropdownMenuItem(
+                  value: '4',
+                  child: Text('Pos Pattimura'),
+                ),
+                DropdownMenuItem(
+                  value: '5',
+                  child: Text('Pos Komplek II'),
+                ),
+                DropdownMenuItem(
+                  value: '6',
+                  child: Text('Pos Komplek IV'),
+                ),
+                DropdownMenuItem(
+                  value: '7',
+                  child: Text('Dinas Luar'),
                 ),
               ],
               onChanged: (value) {
