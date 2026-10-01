@@ -5,8 +5,7 @@ import '../core/supabase_client.dart';
 class AttendanceService {
   final _supabase = SupabaseClientService.client;
 
-  static const String bucketName =
-      'attendance-photos';
+  static const String bucketName = 'attendance-photos';
 
   // ============================================================
   // UPLOAD FOTO
@@ -29,7 +28,7 @@ class AttendanceService {
         '${dateTime.second.toString().padLeft(2, '0')}';
 
     final path =
-        'attendance/$idSatpam/$date/${type}_$time.jpg';
+        'attendance/$idSatpam/$date/${type}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
     await _supabase.storage
         .from(bucketName)
@@ -42,10 +41,50 @@ class AttendanceService {
   }
 
   // ============================================================
+  // CARI PRESENSI AKTIF
+  // ============================================================
+  //
+  // Presensi aktif:
+  // - milik satpam tersebut
+  // - tanggal hari ini
+  // - endtime masih NULL
+  //
+  // ============================================================
+
+  Future<Map<String, dynamic>?> getActiveAttendance({
+    required int idSatpam,
+  }) async {
+    final now = DateTime.now();
+
+    final date =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final response = await _supabase
+        .from('presensi')
+        .select()
+        .eq('id_satpam', idSatpam)
+        .eq('date', date)
+        .isFilter('endtime', null)
+        .order(
+          'id',
+          ascending: false,
+        )
+        .limit(1);
+
+    if (response.isEmpty) {
+      return null;
+    }
+
+    return response.first;
+  }
+
+  // ============================================================
   // SIMPAN PRESENSI MASUK
   // ============================================================
 
-  Future<void> saveCheckIn({
+  Future<int> saveCheckIn({
     required int idSatpam,
     required int idShift,
     required int idLokasi,
@@ -62,7 +101,7 @@ class AttendanceService {
         '${dateTime.minute.toString().padLeft(2, '0')}:'
         '${dateTime.second.toString().padLeft(2, '0')}';
 
-    await _supabase
+    final response = await _supabase
         .from('presensi')
         .insert({
       'id_satpam': idSatpam,
@@ -75,6 +114,64 @@ class AttendanceService {
       'out_path': null,
       'status': 'MASUK',
       'remarks': null,
-    });
+    })
+        .select('id')
+        .single();
+
+    return response['id'] as int;
+  }
+
+  // ============================================================
+  // SIMPAN PRESENSI KELUAR
+  // ============================================================
+  //
+  // UPDATE ROW YANG SAMA
+  //
+  // ============================================================
+
+  Future<void> saveCheckOut({
+    required int attendanceId,
+    required DateTime dateTime,
+    required String photoPath,
+  }) async {
+    final time =
+        '${dateTime.hour.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')}:'
+        '${dateTime.second.toString().padLeft(2, '0')}';
+
+    await _supabase
+        .from('presensi')
+        .update({
+      'endtime': time,
+      'out_path': photoPath,
+      'status': 'SELESAI',
+    })
+        .eq('id', attendanceId);
+  }
+
+
+  Future<Map<String, dynamic>?> getTodayAttendance({
+    required int idSatpam,
+  }) async {
+    final now = DateTime.now();
+
+    final date =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final response = await _supabase
+        .from('presensi')
+        .select()
+        .eq('id_satpam', idSatpam)
+        .eq('date', date)
+        .order('id', ascending: false)
+        .limit(1);
+
+    if (response.isEmpty) {
+      return null;
+    }
+
+    return response.first;
   }
 }
