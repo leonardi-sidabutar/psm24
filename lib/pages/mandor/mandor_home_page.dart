@@ -114,7 +114,7 @@ class _MandorHomePageState
               children: [
                 Expanded(
                   child: _summaryCard(
-                    title: 'Total Satpam',
+                    title: 'Satpam',
                     value: '12',
                     icon: Icons.groups,
                   ),
@@ -124,7 +124,7 @@ class _MandorHomePageState
 
                 Expanded(
                   child: _summaryCard(
-                    title: 'Sudah Presensi',
+                    title: 'Presensi',
                     value: '10',
                     icon: Icons.check_circle,
                   ),
