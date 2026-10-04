@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../models/employee.dart';
+import '../../services/attendance_service.dart';
 import 'transaction_page.dart';
-import '../satpam/attendance_page.dart';
+import 'attendance_monitoring_page.dart';
 
 class MandorHomePage extends StatefulWidget {
   final Employee employee;
@@ -13,21 +14,88 @@ class MandorHomePage extends StatefulWidget {
   });
 
   @override
-  State<MandorHomePage> createState() => _MandorHomePageState();
+  State<MandorHomePage> createState() =>
+      _MandorHomePageState();
 }
 
 class _MandorHomePageState
     extends State<MandorHomePage> {
+  final AttendanceService _attendanceService =
+      AttendanceService();
+
   int _selectedIndex = 0;
+
+  bool _isLoading = true;
+
+  Map<String, dynamic>? _dashboard;
+
+  // ==========================================================
+  // INIT
+  // ==========================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadDashboard();
+  }
+
+  // ==========================================================
+  // LOAD DASHBOARD
+  // ==========================================================
+
+  Future<void> _loadDashboard() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final result =
+          await _attendanceService
+              .getMandorDashboard();
+
+      if (!mounted) return;
+
+      setState(() {
+        _dashboard = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint(
+        'ERROR LOAD MANDOR DASHBOARD: $e',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal mengambil data dashboard: $e',
+          ),
+        ),
+      );
+    }
+  }
+
+  // ==========================================================
+  // BUILD
+  // ==========================================================
 
   @override
   Widget build(BuildContext context) {
     final pages = [
       _buildDashboard(),
-      TransactionPage(
+
+      AttendanceMonitoringPage(
         employee: widget.employee,
       ),
-      AttendancePage(
+
+      TransactionPage(
         employee: widget.employee,
       ),
     ];
@@ -35,68 +103,74 @@ class _MandorHomePageState
     return Scaffold(
       body: pages[_selectedIndex],
 
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar:
+          NavigationBar(
         selectedIndex: _selectedIndex,
+
         onDestinationSelected: (index) {
           setState(() {
             _selectedIndex = index;
           });
+
+          // Refresh ketika kembali ke Home
+          if (index == 0) {
+            _loadDashboard();
+          }
         },
+
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
+            icon: Icon(
+              Icons.dashboard_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.dashboard,
+            ),
             label: 'Home',
           ),
+
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Transaksi',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.access_time_outlined),
-            selectedIcon: Icon(Icons.access_time),
+            icon: Icon(
+              Icons.access_time_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.access_time,
+            ),
             label: 'Presensi',
+          ),
+
+          NavigationDestination(
+            icon: Icon(
+              Icons.receipt_long_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.receipt_long,
+            ),
+            label: 'Transaksi',
           ),
         ],
       ),
     );
   }
 
+  // ==========================================================
+  // DASHBOARD
+  // ==========================================================
+
   Widget _buildDashboard() {
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+      child: RefreshIndicator(
+        onRefresh: _loadDashboard,
+
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+
           children: [
-            Text(
-              'Selamat Datang',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
-            ),
+            _buildHeader(),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 20),
 
-            Text(
-              widget.employee.employeeName,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            const Text(
-              'Mandor Satpam',
-              style: TextStyle(
-                fontSize: 14,
-              ),
-            ),
+            _buildDateCard(),
 
             const SizedBox(height: 24),
 
@@ -110,82 +184,102 @@ class _MandorHomePageState
 
             const SizedBox(height: 12),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _summaryCard(
-                    title: 'Satpam',
-                    value: '12',
-                    icon: Icons.groups,
-                  ),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(40),
+                child: Center(
+                  child:
+                      CircularProgressIndicator(),
                 ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: _summaryCard(
-                    title: 'Presensi',
-                    value: '10',
-                    icon: Icons.check_circle,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            _summaryCard(
-              title: 'Belum Presensi',
-              value: '2',
-              icon: Icons.warning_amber,
-            ),
+              )
+            else
+              _buildSummary(),
 
             const SizedBox(height: 28),
 
-            const Text(
-              'Ringkasan Shift',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            _buildShiftSection(),
+
+            const SizedBox(height: 24),
+
+            _buildAttendanceButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // HEADER
+  // ==========================================================
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+
+      children: [
+        Text(
+          'Selamat Datang',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.grey.shade600,
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          widget.employee.employeeName,
+          style: const TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          'Mandor Satpam',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // DATE
+  // ==========================================================
+
+  Widget _buildDateCard() {
+    final now = DateTime.now();
+
+    final date =
+        '${now.day.toString().padLeft(2, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.year}';
+
+    return Card(
+      elevation: 0,
+      color: Colors.grey.shade100,
+
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+
+        child: Row(
+          children: [
+            const Icon(
+              Icons.calendar_today,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(width: 12),
 
-            _shiftCard(
-              shiftName: 'Pagi',
-              hadir: 8,
-              total: 8,
-            ),
-
-            _shiftCard(
-              shiftName: 'Siang',
-              hadir: 2,
-              total: 2,
-            ),
-
-            _shiftCard(
-              shiftName: 'Malam',
-              hadir: 0,
-              total: 2,
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _selectedIndex = 1;
-                  });
-                },
-                icon: const Icon(
-                  Icons.receipt_long,
-                ),
-                label: const Text(
-                  'Lihat Transaksi Presensi',
-                ),
+            Text(
+              date,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -193,6 +287,80 @@ class _MandorHomePageState
       ),
     );
   }
+
+  // ==========================================================
+  // SUMMARY
+  // ==========================================================
+
+  Widget _buildSummary() {
+    final total =
+        _dashboard?['totalSatpam'] ?? 0;
+
+    final hadir =
+        _dashboard?['sudahPresensi'] ?? 0;
+
+    final belum =
+        _dashboard?['belumPresensi'] ?? 0;
+
+    final bertugas =
+        _dashboard?['sedangBertugas'] ?? 0;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                title: 'Total Satpam',
+                value: total.toString(),
+                icon: Icons.groups,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: _summaryCard(
+                title: 'Sudah Presensi',
+                value: hadir.toString(),
+                icon: Icons.check_circle,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        Row(
+          children: [
+            Expanded(
+              child: _summaryCard(
+                title: 'Sedang Bertugas',
+                value: bertugas.toString(),
+                icon:
+                    Icons.person_pin_circle,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: _summaryCard(
+                title: 'Belum Presensi',
+                value: belum.toString(),
+                icon:
+                    Icons.warning_amber,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // SUMMARY CARD
+  // ==========================================================
 
   Widget _summaryCard({
     required String title,
@@ -201,38 +369,36 @@ class _MandorHomePageState
   }) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
+        padding: const EdgeInsets.all(16),
+
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
           children: [
             Icon(
               icon,
-              size: 32,
+              size: 28,
             ),
 
-            const SizedBox(width: 14),
+            const SizedBox(height: 10),
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                    ),
-                  ),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color:
+                    Colors.grey.shade600,
+              ),
+            ),
 
-                  const SizedBox(height: 4),
+            const SizedBox(height: 4),
 
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -241,25 +407,102 @@ class _MandorHomePageState
     );
   }
 
+  // ==========================================================
+  // SHIFT
+  // ==========================================================
+
+  Widget _buildShiftSection() {
+    final shift =
+        _dashboard?['shift']
+            as Map<String, dynamic>?;
+
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+
+      children: [
+        const Text(
+          'Presensi Berdasarkan Shift',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        _shiftCard(
+          shiftName: 'Pagi',
+          hadir: shift?[1]?['hadir'] ?? 0,
+        ),
+
+        _shiftCard(
+          shiftName: 'Siang',
+          hadir: shift?[2]?['hadir'] ?? 0,
+        ),
+
+        _shiftCard(
+          shiftName: 'Malam',
+          hadir: shift?[3]?['hadir'] ?? 0,
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // SHIFT CARD
+  // ==========================================================
+
   Widget _shiftCard({
     required String shiftName,
     required int hadir,
-    required int total,
   }) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin:
+          const EdgeInsets.only(bottom: 10),
+
       child: ListTile(
         leading: const Icon(
           Icons.schedule,
         ),
+
         title: Text(
           'Shift $shiftName',
         ),
-        trailing: Text(
-          '$hadir / $total',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+
+        subtitle: Text(
+          '$hadir satpam sudah presensi',
+        ),
+
+        trailing: const Icon(
+          Icons.chevron_right,
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // BUTTON
+  // ==========================================================
+
+  Widget _buildAttendanceButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+
+      child: ElevatedButton.icon(
+        onPressed: () {
+          setState(() {
+            _selectedIndex = 1;
+          });
+        },
+
+        icon: const Icon(
+          Icons.access_time,
+        ),
+
+        label: const Text(
+          'Lihat Data Presensi',
         ),
       ),
     );

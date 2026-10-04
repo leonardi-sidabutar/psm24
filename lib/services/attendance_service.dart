@@ -174,4 +174,148 @@ class AttendanceService {
 
     return response.first;
   }
+
+  Future<List<Map<String, dynamic>>>
+      getTodayAttendanceList() async {
+    final now = DateTime.now();
+
+    final date =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final response = await _supabase
+        .from('presensi')
+        .select()
+        .eq('date', date)
+        .order(
+          'starttime',
+          ascending: true,
+        );
+
+    return List<Map<String, dynamic>>.from(
+      response,
+    );
+  }
+
+  // ==========================================================
+  // DASHBOARD MANDOR
+  // ==========================================================
+
+  Future<Map<String, dynamic>> getMandorDashboard() async {
+    final now = DateTime.now();
+
+    final date =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    // ========================================================
+    // 1. TOTAL SATPAM
+    // ========================================================
+
+    final employees = await _supabase
+        .from('pekerja')
+        .select('nomor')
+        .eq('role', 'SATPAM');
+
+    final int totalSatpam = employees.length;
+
+    // ========================================================
+    // 2. PRESENSI HARI INI
+    // ========================================================
+
+    final response = await _supabase
+        .from('presensi')
+        .select()
+        .eq('date', date);
+
+    final List<Map<String, dynamic>> presensi =
+        List<Map<String, dynamic>>.from(response);
+
+    // ========================================================
+    // 3. SATPAM YANG SUDAH PRESENSI
+    // ========================================================
+
+    final Set<dynamic> satpamSudahPresensi =
+        presensi
+            .map((item) => item['id_satpam'])
+            .toSet();
+
+    final int sudahPresensi =
+        satpamSudahPresensi.length;
+
+    // ========================================================
+    // 4. BELUM PRESENSI
+    // ========================================================
+
+    final int belumPresensi =
+        totalSatpam - sudahPresensi;
+
+    // ========================================================
+    // 5. STATUS BERTUGAS / SELESAI
+    // ========================================================
+
+    int sedangBertugas = 0;
+    int sudahSelesai = 0;
+
+    for (final item in presensi) {
+      final endtime = item['endtime'];
+
+      if (endtime == null ||
+          endtime.toString().isEmpty) {
+        sedangBertugas++;
+      } else {
+        sudahSelesai++;
+      }
+    }
+
+    // ========================================================
+    // 6. HITUNG PRESENSI PER SHIFT
+    // ========================================================
+
+    int shiftPagi = 0;
+    int shiftSiang = 0;
+    int shiftMalam = 0;
+
+    for (final item in presensi) {
+      final dynamic rawShift =
+          item['id_shift'];
+
+      final int? idShift =
+          int.tryParse(rawShift.toString());
+
+      if (idShift == 1) {
+        shiftPagi++;
+      } else if (idShift == 2) {
+        shiftSiang++;
+      } else if (idShift == 3) {
+        shiftMalam++;
+      }
+    }
+
+    // ========================================================
+    // RETURN
+    // ========================================================
+
+    return {
+      'totalSatpam': totalSatpam,
+      'sudahPresensi': sudahPresensi,
+      'belumPresensi': belumPresensi,
+      'sedangBertugas': sedangBertugas,
+      'sudahSelesai': sudahSelesai,
+
+      'shift': {
+        1: {
+          'hadir': shiftPagi,
+        },
+        2: {
+          'hadir': shiftSiang,
+        },
+        3: {
+          'hadir': shiftMalam,
+        },
+      },
+    };
+  }
 }
