@@ -401,15 +401,15 @@ class _AttendanceMonitoringPageState
                 ?.toString() ??
             '-';
 
-    final String shift =
-        item['id_shift']
-                ?.toString() ??
-            '-';
+    // final String shift =
+    //     item['id_shift']
+    //             ?.toString() ??
+    //         '-';
 
-    final String lokasi =
-        item['id_lokasi']
-                ?.toString() ??
-            '-';
+    // final String lokasi =
+    //     item['id_lokasi']
+    //             ?.toString() ??
+    //         '-';
 
     final bool isActive =
         item['endtime'] == null ||

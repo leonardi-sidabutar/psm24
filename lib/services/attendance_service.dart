@@ -22,10 +22,10 @@ class AttendanceService {
         '${dateTime.month.toString().padLeft(2, '0')}-'
         '${dateTime.day.toString().padLeft(2, '0')}';
 
-    final time =
-        '${dateTime.hour.toString().padLeft(2, '0')}'
-        '${dateTime.minute.toString().padLeft(2, '0')}'
-        '${dateTime.second.toString().padLeft(2, '0')}';
+    // final time =
+    //     '${dateTime.hour.toString().padLeft(2, '0')}'
+    //     '${dateTime.minute.toString().padLeft(2, '0')}'
+    //     '${dateTime.second.toString().padLeft(2, '0')}';
 
     final path =
         'attendance/$idSatpam/$date/${type}_${DateTime.now().millisecondsSinceEpoch}.jpg';
