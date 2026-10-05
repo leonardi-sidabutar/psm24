@@ -177,6 +177,10 @@ class AttendanceService {
 
   Future<List<Map<String, dynamic>>>
       getTodayAttendanceList() async {
+    // ==========================================================
+    // 1. TANGGAL HARI INI
+    // ==========================================================
+
     final now = DateTime.now();
 
     final date =
@@ -184,7 +188,11 @@ class AttendanceService {
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
 
-    final response = await _supabase
+    // ==========================================================
+    // 2. AMBIL DATA PRESENSI
+    // ==========================================================
+
+    final presensiResponse = await _supabase
         .from('presensi')
         .select()
         .eq('date', date)
@@ -193,9 +201,105 @@ class AttendanceService {
           ascending: true,
         );
 
-    return List<Map<String, dynamic>>.from(
-      response,
-    );
+    // ==========================================================
+    // 3. AMBIL MASTER SHIFT
+    // ==========================================================
+
+    final shiftResponse = await _supabase
+        .from('shift')
+        .select();
+
+    // ==========================================================
+    // 4. AMBIL MASTER LOKASI
+    // ==========================================================
+
+    final lokasiResponse = await _supabase
+        .from('lokasi')
+        .select();
+
+    // ==========================================================
+    // 5. UBAH DATA SHIFT MENJADI MAP BERDASARKAN ID
+    // ==========================================================
+
+    final Map<String, Map<String, dynamic>>
+        shiftMap = {};
+
+    for (final item in shiftResponse) {
+      shiftMap[
+        item['id'].toString()
+      ] = Map<String, dynamic>.from(item);
+    }
+
+    // ==========================================================
+    // 6. UBAH DATA LOKASI MENJADI MAP BERDASARKAN ID
+    // ==========================================================
+
+    final Map<String, Map<String, dynamic>>
+        lokasiMap = {};
+
+    for (final item in lokasiResponse) {
+      lokasiMap[
+        item['id'].toString()
+      ] = Map<String, dynamic>.from(item);
+    }
+
+    // ==========================================================
+    // 7. GABUNGKAN PRESENSI + SHIFT + LOKASI
+    // ==========================================================
+
+    final List<Map<String, dynamic>>
+        result = [];
+
+    for (final item in presensiResponse) {
+      final Map<String, dynamic> data =
+          Map<String, dynamic>.from(item);
+
+      // --------------------------------------------------------
+      // ID SHIFT DARI PRESENSI
+      // --------------------------------------------------------
+
+      final String shiftId =
+          item['id_shift']?.toString() ?? '';
+
+      // --------------------------------------------------------
+      // ID LOKASI DARI PRESENSI
+      // --------------------------------------------------------
+
+      final String lokasiId =
+          item['id_lokasi']?.toString() ?? '';
+
+      // --------------------------------------------------------
+      // CARI MASTER SHIFT
+      // --------------------------------------------------------
+
+      final shiftData =
+          shiftMap[shiftId];
+
+      // --------------------------------------------------------
+      // CARI MASTER LOKASI
+      // --------------------------------------------------------
+
+      final lokasiData =
+          lokasiMap[lokasiId];
+
+      // --------------------------------------------------------
+      // SIMPAN DATA HASIL JOIN MANUAL
+      // --------------------------------------------------------
+
+      data['shift_data'] =
+          shiftData;
+
+      data['lokasi_data'] =
+          lokasiData;
+
+      result.add(data);
+    }
+
+    // ==========================================================
+    // DEBUG
+    // ==========================================================
+
+    return result;
   }
 
   // ==========================================================

@@ -417,6 +417,26 @@ class _AttendanceMonitoringPageState
                 .toString()
                 .isEmpty;
 
+    final Map<String, dynamic>? shiftData =
+        item['shift_data'] != null
+            ? Map<String, dynamic>.from(
+                item['shift_data'],
+              )
+            : null;
+
+    final Map<String, dynamic>? lokasiData =
+        item['lokasi_data'] != null
+            ? Map<String, dynamic>.from(
+                item['lokasi_data'],
+              )
+            : null;
+
+    final String namaShift =
+        shiftData?['shift']?.toString() ?? '-';
+
+    final String namaLokasi =
+        lokasiData?['lokasi']?.toString() ?? '-';
+
     return Card(
       margin:
           const EdgeInsets.only(
@@ -442,34 +462,75 @@ class _AttendanceMonitoringPageState
 
                 const SizedBox(width: 12),
 
+
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
-
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ==========================================
+                      // NAMA SATPAM
+                      // ==========================================
                       Text(
                         'Satpam $idSatpam',
-                        style:
-                            const TextStyle(
-                          fontWeight:
-                              FontWeight.bold,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
 
-                      const SizedBox(
-                        height: 3,
+                      const SizedBox(height: 6),
+
+                      // ==========================================
+                      // SHIFT
+                      // ==========================================
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          Expanded(
+                            child: Text(
+                              'Shift $namaShift',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
-                      Text(
-                        'Shift $shift • Lokasi $lokasi',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors
-                              .grey.shade600,
-                        ),
+                      const SizedBox(height: 4),
+
+                      // ==========================================
+                      // LOKASI
+                      // ==========================================
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          Expanded(
+                            child: Text(
+                              namaLokasi,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
