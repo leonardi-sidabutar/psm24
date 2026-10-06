@@ -22,7 +22,6 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState
     extends State<AttendancePage> {
-
   // ==========================================================
   // SERVICE
   // ==========================================================
@@ -63,7 +62,6 @@ class _AttendancePageState
   // ==========================================================
 
   Future<void> _checkActiveAttendance() async {
-
     final int? idSatpam =
         int.tryParse(
       widget.employee.employeeCode,
@@ -74,7 +72,6 @@ class _AttendancePageState
     }
 
     try {
-
       final attendance =
           await _attendanceService
               .getActiveAttendance(
@@ -84,17 +81,12 @@ class _AttendancePageState
       if (!mounted) return;
 
       setState(() {
-
-        _activeAttendance =
-            attendance;
+        _activeAttendance = attendance;
 
         _hasActiveAttendance =
             attendance != null;
-
       });
-
     } catch (e) {
-
       debugPrint(
         'ERROR CHECK ACTIVE ATTENDANCE: $e',
       );
@@ -108,14 +100,50 @@ class _AttendancePageState
   }
 
   // ==========================================================
+  // AMBIL NAMA SHIFT DARI HASIL MANUAL JOIN
+  // ==========================================================
+
+  String get _namaShift {
+    final dynamic shiftData =
+        _activeAttendance?['shift_data'];
+
+    if (shiftData == null) {
+      return '-';
+    }
+
+    if (shiftData is Map) {
+      return shiftData['shift']?.toString() ?? '-';
+    }
+
+    return '-';
+  }
+
+  // ==========================================================
+  // AMBIL NAMA LOKASI DARI HASIL MANUAL JOIN
+  // ==========================================================
+
+  String get _namaLokasi {
+    final dynamic lokasiData =
+        _activeAttendance?['lokasi_data'];
+
+    if (lokasiData == null) {
+      return '-';
+    }
+
+    if (lokasiData is Map) {
+      return lokasiData['lokasi']?.toString() ?? '-';
+    }
+
+    return '-';
+  }
+
+  // ==========================================================
   // BUILD
   // ==========================================================
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-
       appBar: AppBar(
         title: const Text(
           'Presensi',
@@ -123,29 +151,21 @@ class _AttendancePageState
       ),
 
       body: RefreshIndicator(
-
-        onRefresh:
-            _checkActiveAttendance,
+        onRefresh: _checkActiveAttendance,
 
         child: ListView(
-
-          padding:
-              const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
 
           children: [
-
             // ==================================================
             // INFORMASI SATPAM
             // ==================================================
 
             Text(
               widget.employee.employeeName,
-
-              style:
-                  const TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
-                fontWeight:
-                    FontWeight.bold,
+                fontWeight: FontWeight.bold,
               ),
             ),
 
@@ -153,12 +173,9 @@ class _AttendancePageState
 
             Text(
               widget.employee.employeeCode,
-
-              style:
-                  TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color:
-                    Colors.grey.shade600,
+                color: Colors.grey.shade600,
               ),
             ),
 
@@ -196,64 +213,215 @@ class _AttendancePageState
   // ==========================================================
 
   Widget _buildStatusCard() {
-
     if (_hasActiveAttendance) {
-
       return Card(
-
         child: Padding(
-
-          padding:
-              const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
 
           child: Column(
-
             crossAxisAlignment:
                 CrossAxisAlignment.start,
 
             children: [
+              // ==================================================
+              // HEADER STATUS
+              // ==================================================
 
-              const Row(
-
+              Row(
                 children: [
-
-                  Icon(
+                  const Icon(
                     Icons.login,
                     color: Colors.green,
                   ),
 
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
 
-                  Text(
-                    'Sedang Bertugas',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight:
-                          FontWeight.bold,
+                  const Expanded(
+                    child: Text(
+                      'Sedang Bertugas',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius:
+                          BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'AKTIF',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight:
+                            FontWeight.bold,
+                        color:
+                            Colors.green.shade700,
+                      ),
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 18),
 
-              Text(
-                'Jam masuk : '
-                '${_activeAttendance?['starttime'] ?? '-'}',
+              const Divider(),
+
+              const SizedBox(height: 10),
+
+              // ==================================================
+              // JAM MASUK
+              // ==================================================
+
+              Row(
+                children: [
+                  Icon(
+                    Icons.login,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Jam Masuk',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Colors.grey.shade600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 2),
+
+                        Text(
+                          _activeAttendance?[
+                                  'starttime']
+                              ?.toString() ??
+                              '-',
+                          style:
+                              const TextStyle(
+                            fontSize: 15,
+                            fontWeight:
+                                FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
 
-              const SizedBox(height: 5),
+              const SizedBox(height: 14),
 
-              Text(
-                'Shift : '
-                '${_activeAttendance?['id_shift'] ?? '-'}',
+              // ==================================================
+              // SHIFT
+              // ==================================================
+
+              Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.schedule_outlined,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Shift',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Colors.grey.shade600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 2),
+
+                        Text(
+                          _namaShift,
+                          style:
+                              const TextStyle(
+                            fontSize: 15,
+                            fontWeight:
+                                FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
 
-              const SizedBox(height: 5),
+              const SizedBox(height: 14),
 
-              Text(
-                'Lokasi : '
-                '${_activeAttendance?['id_lokasi'] ?? '-'}',
+              // ==================================================
+              // LOKASI
+              // ==================================================
+
+              Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Lokasi',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Colors.grey.shade600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 2),
+
+                        Text(
+                          _namaLokasi,
+                          style:
+                              const TextStyle(
+                            fontSize: 15,
+                            fontWeight:
+                                FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -261,17 +429,16 @@ class _AttendancePageState
       );
     }
 
+    // ==========================================================
+    // BELUM PRESENSI
+    // ==========================================================
+
     return Card(
-
       child: Padding(
-
-        padding:
-            const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
 
         child: Row(
-
           children: [
-
             const Icon(
               Icons.login,
               color: Colors.blue,
@@ -280,7 +447,6 @@ class _AttendancePageState
             const SizedBox(width: 10),
 
             const Expanded(
-
               child: Text(
                 'Belum melakukan presensi masuk',
                 style: TextStyle(
@@ -301,16 +467,14 @@ class _AttendancePageState
   // ==========================================================
 
   Widget _buildCheckInForm() {
-
     return Column(
-
       children: [
-
         // ======================================================
         // LOKASI
         // ======================================================
 
         DropdownButtonFormField<String>(
+          value: selectedLocation,
 
           decoration:
               const InputDecoration(
@@ -320,7 +484,6 @@ class _AttendancePageState
           ),
 
           items: const [
-
             DropdownMenuItem(
               value: '1',
               child:
@@ -368,7 +531,6 @@ class _AttendancePageState
               _isLoading
                   ? null
                   : (value) {
-
                       setState(() {
                         selectedLocation =
                             value;
@@ -383,6 +545,7 @@ class _AttendancePageState
         // ======================================================
 
         DropdownButtonFormField<String>(
+          value: selectedShift,
 
           decoration:
               const InputDecoration(
@@ -392,23 +555,19 @@ class _AttendancePageState
           ),
 
           items: const [
-
             DropdownMenuItem(
               value: '1',
-              child:
-                  Text('Pagi'),
+              child: Text('Pagi'),
             ),
 
             DropdownMenuItem(
               value: '2',
-              child:
-                  Text('Siang'),
+              child: Text('Siang'),
             ),
 
             DropdownMenuItem(
               value: '3',
-              child:
-                  Text('Malam'),
+              child: Text('Malam'),
             ),
           ],
 
@@ -416,7 +575,6 @@ class _AttendancePageState
               _isLoading
                   ? null
                   : (value) {
-
                       setState(() {
                         selectedShift =
                             value;
@@ -431,28 +589,21 @@ class _AttendancePageState
         // ======================================================
 
         SizedBox(
-
-          width:
-              double.infinity,
-
-          height:
-              50,
+          width: double.infinity,
+          height: 50,
 
           child:
               ElevatedButton.icon(
-
             onPressed:
                 _isLoading
                     ? null
                     : _checkIn,
 
-            icon:
-                const Icon(
+            icon: const Icon(
               Icons.login,
             ),
 
-            label:
-                const Text(
+            label: const Text(
               'PRESENSI MASUK',
             ),
           ),
@@ -466,51 +617,39 @@ class _AttendancePageState
   // ==========================================================
 
   Widget _buildCheckOutSection() {
-
     return Column(
-
       children: [
-
         Container(
-
-          width:
-              double.infinity,
+          width: double.infinity,
 
           padding:
               const EdgeInsets.all(16),
 
-          decoration:
-              BoxDecoration(
+          decoration: BoxDecoration(
             borderRadius:
                 BorderRadius.circular(12),
 
-            color:
-                Colors.orange.shade50,
+            color: Colors.orange.shade50,
 
-            border:
-                Border.all(
+            border: Border.all(
               color:
                   Colors.orange.shade200,
             ),
           ),
 
           child: const Column(
-
             children: [
-
               Icon(
                 Icons.logout,
                 size: 45,
-                color:
-                    Colors.orange,
+                color: Colors.orange,
               ),
 
               SizedBox(height: 10),
 
               Text(
                 'Konfirmasi Presensi Keluar',
-                style:
-                    TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight:
                       FontWeight.bold,
@@ -535,16 +674,11 @@ class _AttendancePageState
         // ======================================================
 
         SizedBox(
-
-          width:
-              double.infinity,
-
-          height:
-              52,
+          width: double.infinity,
+          height: 52,
 
           child:
               ElevatedButton.icon(
-
             onPressed:
                 _isLoading
                     ? null
@@ -564,8 +698,7 @@ class _AttendancePageState
                         Icons.logout,
                       ),
 
-            label:
-                Text(
+            label: Text(
               _isLoading
                   ? 'Memproses...'
                   : 'PRESENSI KELUAR',
@@ -581,9 +714,7 @@ class _AttendancePageState
   // ==========================================================
 
   Future<void> _checkIn() async {
-
     if (selectedLocation == null) {
-
       _showMessage(
         'Silakan pilih lokasi terlebih dahulu',
       );
@@ -592,7 +723,6 @@ class _AttendancePageState
     }
 
     if (selectedShift == null) {
-
       _showMessage(
         'Silakan pilih shift terlebih dahulu',
       );
@@ -606,7 +736,6 @@ class _AttendancePageState
     );
 
     if (idSatpam == null) {
-
       _showMessage(
         'ID satpam tidak valid',
       );
@@ -619,22 +748,16 @@ class _AttendancePageState
     });
 
     try {
-
       // ======================================================
       // KAMERA
       // ======================================================
 
       final XFile? image =
           await _picker.pickImage(
-
-        source:
-            ImageSource.camera,
-
+        source: ImageSource.camera,
         preferredCameraDevice:
             CameraDevice.front,
-
-        imageQuality:
-            80,
+        imageQuality: 80,
       );
 
       if (image == null) {
@@ -646,9 +769,7 @@ class _AttendancePageState
       // ======================================================
 
       final File photoFile =
-          await _compressImage(
-        image,
-      );
+          await _compressImage(image);
 
       // ======================================================
       // WAKTU
@@ -664,18 +785,10 @@ class _AttendancePageState
       final String photoPath =
           await _attendanceService
               .uploadPhoto(
-
-        file:
-            photoFile,
-
-        idSatpam:
-            idSatpam,
-
-        dateTime:
-            now,
-
-        type:
-            'in',
+        file: photoFile,
+        idSatpam: idSatpam,
+        dateTime: now,
+        type: 'in',
       );
 
       // ======================================================
@@ -684,9 +797,7 @@ class _AttendancePageState
 
       await _attendanceService
           .saveCheckIn(
-
-        idSatpam:
-            idSatpam,
+        idSatpam: idSatpam,
 
         idShift:
             int.parse(
@@ -698,11 +809,9 @@ class _AttendancePageState
           selectedLocation!,
         ),
 
-        dateTime:
-            now,
+        dateTime: now,
 
-        photoPath:
-            photoPath,
+        photoPath: photoPath,
       );
 
       if (!mounted) return;
@@ -712,13 +821,8 @@ class _AttendancePageState
       );
 
       setState(() {
-
-        selectedLocation =
-            null;
-
-        selectedShift =
-            null;
-
+        selectedLocation = null;
+        selectedShift = null;
       });
 
       // ======================================================
@@ -726,9 +830,7 @@ class _AttendancePageState
       // ======================================================
 
       await _checkActiveAttendance();
-
     } catch (e) {
-
       debugPrint(
         'ERROR PRESENSI MASUK: $e',
       );
@@ -738,15 +840,11 @@ class _AttendancePageState
       _showMessage(
         'Presensi masuk gagal: $e',
       );
-
     } finally {
-
       if (mounted) {
-
         setState(() {
           _isLoading = false;
         });
-
       }
     }
   }
@@ -756,13 +854,11 @@ class _AttendancePageState
   // ==========================================================
 
   Future<void> _checkOut() async {
-
     // ========================================================
     // PASTIKAN ADA PRESENSI AKTIF
     // ========================================================
 
     if (_activeAttendance == null) {
-
       _showMessage(
         'Tidak ditemukan presensi aktif',
       );
@@ -776,55 +872,41 @@ class _AttendancePageState
 
     final bool? confirmed =
         await showDialog<bool>(
+      context: context,
 
-      context:
-          context,
-
-      builder:
-          (context) {
-
+      builder: (context) {
         return AlertDialog(
-
-          title:
-              const Text(
+          title: const Text(
             'Konfirmasi Presensi Keluar',
           ),
 
-          content:
-              const Text(
+          content: const Text(
             'Apakah Anda yakin sudah selesai bertugas dan ingin melakukan presensi keluar?',
           ),
 
           actions: [
-
             TextButton(
-
-              onPressed:
-                  () {
+              onPressed: () {
                 Navigator.pop(
                   context,
                   false,
                 );
               },
 
-              child:
-                  const Text(
+              child: const Text(
                 'BATAL',
               ),
             ),
 
             ElevatedButton(
-
-              onPressed:
-                  () {
+              onPressed: () {
                 Navigator.pop(
                   context,
                   true,
                 );
               },
 
-              child:
-                  const Text(
+              child: const Text(
                 'YA, KELUAR',
               ),
             ),
@@ -850,7 +932,6 @@ class _AttendancePageState
     );
 
     if (idSatpam == null) {
-
       _showMessage(
         'ID satpam tidak valid',
       );
@@ -863,22 +944,16 @@ class _AttendancePageState
     });
 
     try {
-
       // ======================================================
       // KAMERA DEPAN
       // ======================================================
 
       final XFile? image =
           await _picker.pickImage(
-
-        source:
-            ImageSource.camera,
-
+        source: ImageSource.camera,
         preferredCameraDevice:
             CameraDevice.front,
-
-        imageQuality:
-            80,
+        imageQuality: 80,
       );
 
       if (image == null) {
@@ -890,9 +965,7 @@ class _AttendancePageState
       // ======================================================
 
       final File photoFile =
-          await _compressImage(
-        image,
-      );
+          await _compressImage(image);
 
       // ======================================================
       // WAKTU KELUAR
@@ -908,18 +981,10 @@ class _AttendancePageState
       final String photoPath =
           await _attendanceService
               .uploadPhoto(
-
-        file:
-            photoFile,
-
-        idSatpam:
-            idSatpam,
-
-        dateTime:
-            now,
-
-        type:
-            'out',
+        file: photoFile,
+        idSatpam: idSatpam,
+        dateTime: now,
+        type: 'out',
       );
 
       // ======================================================
@@ -928,15 +993,9 @@ class _AttendancePageState
 
       await _attendanceService
           .saveCheckOut(
-
-        attendanceId:
-            attendanceId,
-
-        dateTime:
-            now,
-
-        photoPath:
-            photoPath,
+        attendanceId: attendanceId,
+        dateTime: now,
+        photoPath: photoPath,
       );
 
       if (!mounted) return;
@@ -950,9 +1009,7 @@ class _AttendancePageState
       // ======================================================
 
       await _checkActiveAttendance();
-
     } catch (e) {
-
       debugPrint(
         'ERROR PRESENSI KELUAR: $e',
       );
@@ -962,15 +1019,11 @@ class _AttendancePageState
       _showMessage(
         'Presensi keluar gagal: $e',
       );
-
     } finally {
-
       if (mounted) {
-
         setState(() {
           _isLoading = false;
         });
-
       }
     }
   }
@@ -982,7 +1035,6 @@ class _AttendancePageState
   Future<File> _compressImage(
     XFile image,
   ) async {
-
     final File originalFile =
         File(image.path);
 
@@ -1001,26 +1053,15 @@ class _AttendancePageState
     final XFile? compressedImage =
         await FlutterImageCompress
             .compressAndGetFile(
-
       image.path,
-
       targetPath,
-
-      quality:
-          50,
-
-      minWidth:
-          720,
-
-      minHeight:
-          720,
-
-      format:
-          CompressFormat.jpeg,
+      quality: 50,
+      minWidth: 720,
+      minHeight: 720,
+      format: CompressFormat.jpeg,
     );
 
     if (compressedImage == null) {
-
       throw Exception(
         'Gagal melakukan kompresi foto',
       );
@@ -1047,12 +1088,10 @@ class _AttendancePageState
   void _showMessage(
     String message,
   ) {
-
     ScaffoldMessenger.of(context)
         .showSnackBar(
       SnackBar(
-        content:
-            Text(message),
+        content: Text(message),
       ),
     );
   }

@@ -50,16 +50,23 @@ class AttendanceService {
   // - endtime masih NULL
   //
   // ============================================================
-
   Future<Map<String, dynamic>?> getActiveAttendance({
     required int idSatpam,
   }) async {
+    // ==========================================================
+    // 1. TANGGAL HARI INI
+    // ==========================================================
+
     final now = DateTime.now();
 
     final date =
         '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
+
+    // ==========================================================
+    // 2. AMBIL PRESENSI AKTIF
+    // ==========================================================
 
     final response = await _supabase
         .from('presensi')
@@ -73,12 +80,92 @@ class AttendanceService {
         )
         .limit(1);
 
+    // ==========================================================
+    // 3. TIDAK ADA PRESENSI AKTIF
+    // ==========================================================
+
     if (response.isEmpty) {
       return null;
     }
 
-    return response.first;
+    // ==========================================================
+    // 4. AMBIL DATA PRESENSI
+    // ==========================================================
+
+    final Map<String, dynamic> attendance =
+        Map<String, dynamic>.from(
+      response.first,
+    );
+
+    // ==========================================================
+    // 5. AMBIL ID SHIFT DAN ID LOKASI
+    // ==========================================================
+
+    final String shiftId =
+        attendance['id_shift']?.toString() ?? '';
+
+    final String lokasiId =
+        attendance['id_lokasi']?.toString() ?? '';
+
+    // ==========================================================
+    // 6. AMBIL MASTER SHIFT
+    // ==========================================================
+
+    final shiftResponse = await _supabase
+        .from('shift')
+        .select()
+        .eq(
+          'id',
+          shiftId,
+        )
+        .limit(1);
+
+    // ==========================================================
+    // 7. AMBIL MASTER LOKASI
+    // ==========================================================
+
+    final lokasiResponse = await _supabase
+        .from('lokasi')
+        .select()
+        .eq(
+          'id',
+          lokasiId,
+        )
+        .limit(1);
+
+    // ==========================================================
+    // 8. SIMPAN DATA SHIFT
+    // ==========================================================
+
+    if (shiftResponse.isNotEmpty) {
+      attendance['shift_data'] =
+          Map<String, dynamic>.from(
+        shiftResponse.first,
+      );
+    } else {
+      attendance['shift_data'] = null;
+    }
+
+    // ==========================================================
+    // 9. SIMPAN DATA LOKASI
+    // ==========================================================
+
+    if (lokasiResponse.isNotEmpty) {
+      attendance['lokasi_data'] =
+          Map<String, dynamic>.from(
+        lokasiResponse.first,
+      );
+    } else {
+      attendance['lokasi_data'] = null;
+    }
+
+    // ==========================================================
+    // 10. DEBUG
+    // ==========================================================
+
+    return attendance;
   }
+
 
   // ============================================================
   // SIMPAN PRESENSI MASUK
